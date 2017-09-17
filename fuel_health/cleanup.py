@@ -177,7 +177,7 @@ def cleanup(cluster_deployment_info):
                             LOG.debug(traceback.format_exc())
                 try:
                     LOG.info('Delete server with name %s' % s.name)
-                    manager._get_compute_client().servers.delete(s.id)
+                    manager._get_compute_client().servers.force_delete(s.id)
                 except Exception:
                     LOG.debug(traceback.format_exc())
     else:

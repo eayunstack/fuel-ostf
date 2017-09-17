@@ -33,8 +33,8 @@ class CeilometerBaseTest(fuel_health.nmanager.NovaNetworkScenarioTest):
             cls.wait_timeout = cls.config.compute.build_timeout
             cls.private_net = 'net04'
             cls.alarm_id_list = []
-            cls.nova_notifications = ['memory', 'vcpus', 'disk.root.size',
-                                      'disk.ephemeral.size']
+            cls.nova_notifications = ['cpu_util', 'disk.write.bytes.rate',
+                                      'disk.read.bytes.rate']
             cls.neutron_network_notifications = ['network', 'network.create',
                                                  'network.update']
             cls.neutron_subnet_notifications = ['subnet', 'subnet.create',
@@ -173,7 +173,7 @@ class CeilometerBaseTest(fuel_health.nmanager.NovaNetworkScenarioTest):
             samples = self.ceilometer_client.samples.list(sample, q=query)
             return len(samples) > count
 
-        if not fuel_health.test.call_until_true(check_count, 60, 1):
+        if not fuel_health.test.call_until_true(check_count, 180, 1):
             self.fail('Count of samples list isn\'t '
                       'greater than expected value')
 
