@@ -314,7 +314,7 @@ class OfficialClientTest(fuel_health.test.TestCase):
 
     def _delete_server(self, server):
         LOG.debug("Deleting server.")
-        self.compute_client.servers.delete(server)
+        self.compute_client.servers.force_delete(server)
 
         def is_deletion_complete():
             try:
@@ -388,7 +388,16 @@ class OfficialClientTest(fuel_health.test.TestCase):
             try:
                 # OpenStack resources are assumed to have a delete()
                 # method which destroys the resource...
-                thing.delete()
+                # EayunStack 3.0.1 need use force_delete() method to delete
+                # instance.
+                if 'Server' in thing.__str__():
+                    # fix nova force_delete could not delete the instance that
+                    # has any task state.
+                    if thing._info['OS-EXT-STS:task_state']:
+                        thing.reset_state(state='active')
+                    thing.force_delete()
+                else:
+                    thing.delete()
             except Exception as e:
                 # If the resource is already missing, mission accomplished.
                 if e.__class__.__name__ == 'NotFound':

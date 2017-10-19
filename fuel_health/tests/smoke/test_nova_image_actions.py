@@ -140,11 +140,11 @@ class TestImageAction(nmanager.SmokeChecksTest):
             1. Get existing image by name.
             2. Launch an instance using the default image.
             3. Make snapshot of the created instance.
-            4. Delete the instance created in step 1.
+            4. Delete the instance created in step 2.
             5. Wait while instance deleted
-            6. Launch another instance from the snapshot created in step 2.
+            6. Launch another instance from the snapshot created in step 3.
             7. Delete server.
-        Duration: 300 s.
+        Duration: 420 s.
         """
         if self.config.compute.libvirt_type == 'vcenter':
             LOG.debug(
@@ -153,7 +153,7 @@ class TestImageAction(nmanager.SmokeChecksTest):
             )
             image_ops_timeout = 700
         else:
-            image_ops_timeout = 180
+            image_ops_timeout = 300
 
         image = self.verify(30, self.get_image_from_name, 1,
                             "Image can not be retrieved.",
@@ -172,7 +172,7 @@ class TestImageAction(nmanager.SmokeChecksTest):
                                         'snapshotting an instance',
                                         server)
 
-        self.verify(180, self.compute_client.servers.delete, 4,
+        self.verify(180, self._delete_server, 4,
                     "Instance can not be deleted.",
                     'Instance deletion',
                     server)

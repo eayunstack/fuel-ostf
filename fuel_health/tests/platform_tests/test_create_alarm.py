@@ -26,82 +26,102 @@ class CeilometerApiSmokeTests(ceilometermanager.CeilometerBaseTest):
         Target component: Ceilometer
 
         Scenario:
-            1. Wait for statistic of metric.
-            2. Create a new alarm.
-            3. List alarms
-            4. Wait for 'ok' alarm state.
-            5. Update the alarm.
-            6. Wait for 'alarm' alarm state.
-            7. Get alarm history.
-            8. Change alarm state to 'ok'.
-            9. Verify state.
-            10. Delete the alarm.
-        Duration: 1500 s.
+            1. Create a new instance.
+            2. Instance become active.
+            3. Create a new alarm.
+            4. List alarms
+            5. Wait for 'ok' alarm state.
+            6. Update the alarm.
+            7. Wait for 'alarm' alarm state.
+            8. Get alarm history.
+            9. Update the alarm.
+            10. Change alarm state to 'ok'.
+            11. Verify state.
+            12. Delete the alarm.
+            13. Delete instance.
+        Duration: 2300 s.
         Deployment tags: Ceilometer
         """
 
         # TODO(vrovachev): refactor this test suite after resolve bug:
         # https://bugs.launchpad.net/fuel/+bug/1314196
 
-        fail_msg = "Getting statistic of metric is failed."
-        msg = "Getting statistic of metric is successful."
+        self.check_image_exists()
 
-        self.verify(600, self.wait_for_statistic_of_metric, 1,
+        name = rand_name('ost1-test-ceilo-instance-')
+
+        fail_msg = "Creation instance is failed."
+        msg = "Instance was created."
+
+        self.instance = self.verify(600, self._create_server, 1,
+                                    fail_msg, msg,
+                                    self.compute_client, name)
+
+        fail_msg = "Instance is not available."
+        msg = "instance becoming available."
+
+        self.verify(200, self.wait_for_instance_status, 2,
                     fail_msg, msg,
-                    meter_name='image')
+                    self.instance, 'ACTIVE')
 
         fail_msg = "Creation of alarm is failed."
         msg = "Creation of alarm is successful."
 
-        alarm = self.verify(60, self.create_alarm, 2,
+        alarm = self.verify(60, self.create_alarm, 3,
                             fail_msg, msg,
-                            meter_name='image',
-                            threshold=0.9,
+                            meter_name='cpu_util',
+                            threshold=80,
                             name=rand_name('ceilometer-alarm'),
-                            period=600,
-                            statistic='avg',
-                            comparison_operator='lt')
+                            comparison_operator='ge')
 
         fail_msg = 'Getting alarms is failed.'
         msg = 'Getting alarms is successful.'
         query = [{'field': 'project', 'op': 'eq', 'value': alarm.project_id}]
 
-        self.verify(60, self.ceilometer_client.alarms.list, 3,
+        self.verify(60, self.ceilometer_client.alarms.list, 4,
                     fail_msg, msg, q=query)
 
         fail_msg = "Alarm status is not equal 'ok'."
         msg = "Alarm status is 'ok'."
 
-        self.verify(1000, self.wait_for_alarm_status, 4,
+        self.verify(1000, self.wait_for_alarm_status, 5,
                     fail_msg, msg,
                     alarm.alarm_id, 'ok')
 
         fail_msg = "Alarm update failed."
         msg = "Alarm was updated."
 
-        self.verify(60, self.ceilometer_client.alarms.update, 5,
+        self.verify(60, self.ceilometer_client.alarms.update, 6,
                     fail_msg, msg,
                     alarm_id=alarm.alarm_id,
-                    threshold=1.1)
+                    threshold=0)
 
         fail_msg = "Alarm verify state is failed."
         msg = "Alarm status is 'alarm'."
 
-        self.verify(1000, self.wait_for_alarm_status, 6,
+        self.verify(1000, self.wait_for_alarm_status, 7,
                     fail_msg, msg,
                     alarm.alarm_id, 'alarm')
 
         fail_msg = "Getting history of alarm is failed."
         msg = 'Getting alarms history is successful.'
 
-        self.verify(60, self.ceilometer_client.alarms.get_history, 7,
+        self.verify(60, self.ceilometer_client.alarms.get_history, 8,
                     fail_msg, msg,
                     alarm_id=alarm.alarm_id)
+
+        fail_msg = "Alarm update failed."
+        msg = "Alarm was updated."
+
+        self.verify(60, self.ceilometer_client.alarms.update, 9,
+                    fail_msg, msg,
+                    alarm_id=alarm.alarm_id,
+                    threshold=0)
 
         fail_msg = "Setting alarm state to 'insufficient data' is failed."
         msg = "Set alarm state to 'insufficient data'."
 
-        self.verify(60, self.ceilometer_client.alarms.set_state, 8,
+        self.verify(60, self.ceilometer_client.alarms.set_state, 10,
                     fail_msg, msg,
                     alarm_id=alarm.alarm_id,
                     state='insufficient data')
@@ -109,7 +129,7 @@ class CeilometerApiSmokeTests(ceilometermanager.CeilometerBaseTest):
         fail_msg = "Alarm state verification is failed."
         msg = "Alarm state verification is successful."
 
-        self.verify(60, self.verify_state, 9,
+        self.verify(60, self.verify_state, 11,
                     fail_msg, msg,
                     alarm_id=alarm.alarm_id,
                     state='insufficient data')
@@ -117,6 +137,13 @@ class CeilometerApiSmokeTests(ceilometermanager.CeilometerBaseTest):
         fail_msg = "Alarm deleting is failed."
         msg = "Alarm deleted."
 
-        self.verify(60, self.ceilometer_client.alarms.delete, 10,
+        self.verify(60, self.ceilometer_client.alarms.delete, 12,
                     fail_msg, msg,
                     alarm_id=alarm.alarm_id)
+
+        fail_msg = "Server can not be deleted."
+        msg = "Server deletion."
+
+        self.verify(30, self._delete_server, 13,
+                    fail_msg, msg,
+                    self.instance.id)
