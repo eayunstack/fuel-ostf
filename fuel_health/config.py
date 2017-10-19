@@ -676,7 +676,7 @@ class NailgunConfig(object):
         else:
             endpoint = public_vip or self.compute.public_ips[0]
             endpoint_mur_sav = public_vip or self.compute.controller_nodes[0]
-            self.identity.url = 'http://{0}/{1}/'.format(endpoint, 'dashboard')
+            self.identity.url = 'http://{0}:8080/{1}/'.format(endpoint, 'dashboard')
             self.identity.ubuntu_url = 'http://{0}/'.format(endpoint)
             self.identity.uri = 'http://{0}:{1}/{2}/'.format(
                 endpoint, 5000, 'v2.0')
