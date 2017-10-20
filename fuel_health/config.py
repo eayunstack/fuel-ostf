@@ -636,6 +636,8 @@ class NailgunConfig(object):
             self.cluster_id, self.network.network_provider)
         data = self.req_session.get(self.nailgun_url + api_url).json()
         self.network.raw_data = data
+        self.compute.segmentation_type = \
+            data['networking_parameters']['segmentation_type']
 
     def _parse_cluster_generated_data(self):
         api_url = '/api/clusters/%s/generated' % self.cluster_id

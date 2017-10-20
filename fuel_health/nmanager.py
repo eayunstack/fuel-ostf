@@ -430,6 +430,7 @@ class NovaNetworkScenarioTest(OfficialClientTest):
             cls.pwd = cls.config.compute.controller_node_ssh_password
             cls.key = cls.config.compute.path_to_private_key
             cls.timeout = cls.config.compute.ssh_timeout
+            cls.segmentation_type = cls.config.compute.segmentation_type
             cls.tenant_id = cls.manager._get_identity_client(
                 cls.config.identity.admin_username,
                 cls.config.identity.admin_password,

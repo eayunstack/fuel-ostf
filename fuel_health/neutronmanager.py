@@ -66,12 +66,22 @@ class NeutronBaseTest(fuel_health.nmanager.NovaNetworkScenarioTest):
         return router
 
     def create_network(self, name):
-        internal_network_info = {
-            "network": {
-                "name": name,
-                "tenant_id": self.tenant_id
+        if self.segmentation_type == 'vlan':
+            internal_network_info = {
+                "network": {
+                    "name": name,
+                    "tenant_id": self.tenant_id,
+                    "provider:network_type": "vlan",
+                    "provider:physical_network": "physnet2"
+                }
             }
-        }
+        else:
+            internal_network_info = {
+                "network": {
+                    "name": name,
+                    "tenant_id": self.tenant_id,
+                }
+            }
 
         network = self.neutron_client.create_network(
             internal_network_info)['network']
