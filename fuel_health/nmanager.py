@@ -439,6 +439,7 @@ class NovaNetworkScenarioTest(OfficialClientTest):
             cls.pwd = cls.config.compute.controller_node_ssh_password
             cls.key = cls.config.compute.path_to_private_key
             cls.timeout = cls.config.compute.ssh_timeout
+            cls.segmentation_type = cls.config.compute.segmentation_type
             cls.tenant_id = cls.manager._get_identity_client(
                 cls.config.identity.admin_username,
                 cls.config.identity.admin_password,
@@ -448,6 +449,7 @@ class NovaNetworkScenarioTest(OfficialClientTest):
             cls.error_msg = []
             cls.flavors = []
             cls.private_net = 'net04'
+            cls.router_host = None
 
     def setUp(self):
         super(NovaNetworkScenarioTest, self).setUp()
@@ -624,13 +626,14 @@ class NovaNetworkScenarioTest(OfficialClientTest):
                     cls.error_msg.append(exc)
                     LOG.debug(traceback.format_exc())
 
-    def _ping_ip_address(self, ip_address, timeout, retries):
-        def ping():
-            cmd = "ping -q -c1 -w10 %s" % ip_address
+    def _ping_ip_address(self, ip_address, timeout, retries, router):
+        def ping(router):
+            cmd = "ip netns exec qrouter-%s ping -q -c1 -w10 %s" \
+                % (router, ip_address)
 
-            if self.host:
+            if self.router_host:
                 try:
-                    ssh = SSHClient(self.host[0],
+                    ssh = SSHClient(self.router_host,
                                     self.usr, self.pwd,
                                     key_filename=self.key,
                                     timeout=timeout)
@@ -641,12 +644,10 @@ class NovaNetworkScenarioTest(OfficialClientTest):
                                           ssh.exec_command, cmd)
 
             else:
-                self.fail('Wrong tests configurations, one from the next '
-                          'parameters are empty controller_node_name or '
-                          'controller_node_ip ')
+                self.fail('Must provide router hosting agent.')
 
         # TODO Allow configuration of execution and sleep duration.
-        return fuel_health.test.call_until_true(ping, 40, 1)
+        return fuel_health.test.call_until_true(ping, 40, 1, router)
 
     def _ping_ip_address_from_instance(self, ip_address, timeout,
                                        retries, viaHost=None):
@@ -679,8 +680,9 @@ class NovaNetworkScenarioTest(OfficialClientTest):
         # TODO Allow configuration of execution and sleep duration.
         return fuel_health.test.call_until_true(ping, 40, 1)
 
-    def _check_vm_connectivity(self, ip_address, timeout, retries):
-        self.assertTrue(self._ping_ip_address(ip_address, timeout, retries),
+    def _check_vm_connectivity(self, ip_address, timeout, retries, router):
+        self.assertTrue(self._ping_ip_address(ip_address, timeout, retries,
+                                              router),
                         "Timed out waiting for %s to become "
                         "reachable. Please, check Network "
                         "configuration" % ip_address)

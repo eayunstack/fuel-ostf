@@ -66,12 +66,22 @@ class NeutronBaseTest(fuel_health.nmanager.NovaNetworkScenarioTest):
         return router
 
     def create_network(self, name):
-        internal_network_info = {
-            "network": {
-                "name": name,
-                "tenant_id": self.tenant_id
+        if self.segmentation_type == 'vlan':
+            internal_network_info = {
+                "network": {
+                    "name": name,
+                    "tenant_id": self.tenant_id,
+                    "provider:network_type": "vlan",
+                    "provider:physical_network": "physnet2"
+                }
             }
-        }
+        else:
+            internal_network_info = {
+                "network": {
+                    "name": name,
+                    "tenant_id": self.tenant_id,
+                }
+            }
 
         network = self.neutron_client.create_network(
             internal_network_info)['network']
@@ -115,6 +125,15 @@ class NeutronBaseTest(fuel_health.nmanager.NovaNetworkScenarioTest):
 
     def _remove_network(self, network):
         self.neutron_client.delete_network(network['id'])
+
+    def _update_router(self, router, body=None):
+        if not body:
+            body = {"router": {"name": router['name']}}
+        self.neutron_client.update_router(router['id'], body)
+
+    def _get_router_host(self, router):
+        return self.neutron_client.list_l3_agent_hosting_routers(
+            router['id'])['agents'][0]['host']
 
     @classmethod
     def _clear_networks(cls):
